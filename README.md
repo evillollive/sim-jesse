@@ -70,12 +70,16 @@ The app's sound data and category mapping live inline in `index.html` in a `<scr
 
 **From the original resources (confirmed):** the name "SimJesse! The Digital Demagogue", the "Run, Jesse, Run!" button, the 1993 Mark Hayes credit and Captain Crunch dedication, the three-button layout, all artwork, all 123 sounds, the master sound list and the speech-vs-music/nature grouping, and the *"No more!"* Stop sound.
 
-**Reconstructed (not byte-for-byte the original code):** the exact sentence-generation algorithm. The original logic is compiled machine code; the grammar here reproduces the "random but grammar-aware" feel rather than the precise original sequencing.
+**Faithfully reverse-engineered from the original binary:** the sentence-generation algorithm was traced through the compiled 68k Macintosh machine code. All 7 speech patterns and the shared coda were identified and ported to JavaScript, using the exact same sound pools and branching logic as the original.
 
-**Event sounds:** `intro` ("His name is Jesse Jackson") plays once at launch: in the browser it fires on the first interaction, since browsers block audio before a user gesture. `noNo` ("No more!") plays when you Stop the Jesse loop. Both are reserved from the random pool.
+**Event sounds:** `intro` plays once at launch: in the browser it fires on the first interaction, since browsers block audio before a user gesture. `noNo` ("no more!") plays when you Stop the Jesse loop. Both are reserved from the random pool.
 
-**Reserved / unused clips:** `aw` and `pip` exist in the app but are left out of the random pools (they were kept out of the master speech list in the original too). If their original trigger is ever identified, they can be wired in.
+**Reserved / unused clips:** `pip` exists in the app but is left out of the random pools (it was kept out of the master speech list in the original too). `aw` plays in Music mode, matching the original binary where it appears in the music function. If `pip`'s original trigger is ever identified, it can be wired in.
 
 ## Credits
 
-Original **SimJesse! 1.0** © 1993 Mark Hayes (ccmlh@it.bu.edu) freeware, *"Please distribute!"* Dedicated to Captain Crunch, the Multicultural Caffeinated Cockatiel. This is a preservation / re-creation project.
+Original **SimJesse! 1.0** &copy; 1993 Mark Hayes (ccmlh@it.bu.edu) freeware, *"Please distribute!"* Dedicated to Captain Crunch, the Multicultural Caffeinated Cockatiel. This is a preservation / re-creation project.
+
+## License
+
+This re-creation is licensed under the [GNU Affero General Public License v3.0](LICENSE).
