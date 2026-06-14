@@ -331,20 +331,21 @@
     if(voice && was==='jesse') playClip('noNo'); }
   function start(name){ if(mode){ mode=null; hardStop(); } mode=name; ui(); runLoop(name); }
 
-  async function playOnce(seq){
+  async function playOnce(seq, seamless){
     ac(); if(ctx.state==='suspended'){ try{ await ctx.resume(); }catch(e){} }
     sub.textContent = words(seq);
     let bufs;
     try{ bufs=await Promise.all(seq.map(getBuf)); }
     catch(e){ return; }
-    let t=ctx.currentTime+0.05; const gap=0.04;
+    const gap = seamless ? 0 : 0.04;
+    let t = seamless ? ctx.currentTime : ctx.currentTime+0.05;
     bufs.forEach((b)=>{
       const s=ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination);
       s.start(t); sources.push(s);
       T(()=>pulse(b.duration), (t-ctx.currentTime)*1000);
       t += b.duration + gap;
     });
-    return new Promise(res=>T(res, (t-ctx.currentTime)*1000+100));
+    return new Promise(res=>T(res, (t-ctx.currentTime)*1000+(seamless?0:100)));
   }
 
   async function runLoop(name){
@@ -353,10 +354,10 @@
       if(name==='jesse') seq=buildSequence();
       else if(name==='music') seq=[rand(CATS.MUSIC)];
       else seq=[rand(CATS.NATURE)];
-      await playOnce(seq);
+      await playOnce(seq, name==='nature');
       if(mode!==name) break;
-      rest();
-      await new Promise(res=>T(res, name==='jesse'?450:160));
+      if(name!=='nature') rest();
+      await new Promise(res=>T(res, name==='jesse'?450:name==='nature'?0:160));
     }
     rest();
   }
