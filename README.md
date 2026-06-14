@@ -4,6 +4,8 @@ A faithful, browser-based re-creation of **SimJesse! 1.0 "The Digital Demagogue"
 
 The original app can no longer run on any modern hardware. I've been a fan of SimJesse since it first came out in 1993, and only recently found a copy on an old Zip disk. That's how we were able to revive and modernize it: extracting every resource from the Mac resource fork, decoding the 1993-era MACE 3:1 audio, recovering the artwork, and reverse-engineering the speech algorithm directly from the compiled 68k machine code.
 
+This project is a tribute to the enduring power of Jesse Jackson's oratory. Even scrambled into random fragments, the conviction and rhythm of his voice come through.
+
 This repo contains the working web version plus **everything extracted from the original app**, so the project can be picked up and worked on again at any time.
 
 ## Run it
