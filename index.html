@@ -328,7 +328,7 @@
   }
 
   function stop(voice){ const was=mode; mode=null; hardStop(); ui();
-    if(voice && was==='jesse') playClip('noNo'); }
+    if(voice && was==='jesse'){ sub.textContent=WORDS['noNo']||'No, no'; playClip('noNo'); } }
   function start(name){ if(mode){ mode=null; hardStop(); } mode=name; ui(); runLoop(name); }
 
   async function playOnce(seq, seamless){
