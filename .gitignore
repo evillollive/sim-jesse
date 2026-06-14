@@ -1,0 +1,7 @@
+_work/
+res/
+wav/
+png/
+*.aifc
+_tmp*
+.DS_Store
