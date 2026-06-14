@@ -41,7 +41,7 @@
     background:repeating-linear-gradient(to bottom, rgba(0,0,0,.16) 0 1px, transparent 1px 3px);}
   .face{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scale(1);
     height:120px; image-rendering:pixelated; transition:transform .08s ease;
-    filter:drop-shadow(0 0 6px rgba(255,140,40,.5)); }
+    filter:drop-shadow(0 0 6px rgba(255,140,40,.5)); display:none; }
   .speakers{ display:flex; justify-content:space-between; gap:14px; margin-top:12px;}
   .spk{ flex:1; height:60px; border:2px solid #000; border-radius:6px; background:#222;
     display:flex;align-items:center;justify-content:center;
@@ -322,6 +322,7 @@
     natureLbl.textContent = mode==='nature' ? 'Stop' : 'Nature';
     musicBtn.classList.toggle('run', mode==='music');
     natureBtn.classList.toggle('run', mode==='nature');
+    face.style.display = mode==='jesse' ? '' : 'none';
     speakBtn.setAttribute('aria-pressed', String(mode==='jesse'));
     musicBtn.setAttribute('aria-pressed', String(mode==='music'));
     natureBtn.setAttribute('aria-pressed', String(mode==='nature'));
