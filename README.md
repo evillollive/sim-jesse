@@ -6,13 +6,13 @@ This repo contains the working web version plus **everything extracted from the 
 
 ## Run it
 
-Open `index.html` in any modern browser. No build step, no server, no dependencies — every sound and image is embedded in the single HTML file. (It also works as a GitHub Pages site: enable Pages on the repo root and it serves `index.html` directly.)
+Open `index.html` in any modern browser. No build step, no server, no dependencies, every sound and image is embedded in the single HTML file. (It also works as a GitHub Pages site: enable Pages on the repo root and it serves `index.html` directly.)
 
 ### Buttons (matching the original three)
 
-- **Run, Jesse, Run!** (left) — runs continuously, generating sentences from the speech clips until you press Stop. On Stop, Jesse says *"No more!"*. The musician words `cranberries` and `lou` are woven into the speech, which is where the classic *"Cranberries Lou Jesse Jackson"* line comes from.
-- **Music** (middle) — loops the instrument/musician samples (tomtom, cymbal, cowbell, bongo, drum solo, Hendrix, Miles).
-- **Nature** (right) — loops the nature samples (splash, wind, bubbles, stream).
+- **Run, Jesse, Run!** (left) runs continuously, generating sentences from the speech clips until you press Stop. On Stop, Jesse says *"No more!"*.
+- **Music** (middle) loops the instrument/musician samples (tomtom, cymbal, cowbell, bongo, drum solo).
+- **Nature** (right) loops the nature samples (splash, wind, bubbles, stream).
 
 The classic Apple / File / Edit menu bar is reproduced from the app's original MENU resources; **About SimJesse!** is under the Apple menu.
 
@@ -47,7 +47,7 @@ tools/
 2. **Resources.** `tools/2` parses the resource map and dumps every resource by type. (Gotcha: reference-list entries are 12 bytes each — a 2-byte id, 2-byte name offset, a packed 1+3-byte attributes/data offset, and a 4-byte reserved handle. Using 8 bytes instead of 12 silently corrupts everything.)
 3. **Sounds.** 120 of the 123 clips are **MACE 3:1** compressed (Apple's old `'snd '` compression, compressionID `3`; the compressed data is exactly `numFrames × 2` bytes). The other 3 are uncompressed 8-bit PCM at ~22 kHz. `tools/3` wraps the MACE data in a small AIFF-C (`MAC3`) container and decodes it with ffmpeg. Decoding to raw PCM and playing the still-compressed bytes is the bug to avoid — it produces fast, distorted noise.
 4. **Art.** PICT resources from a resource fork lack the 512-byte header QuickTime expects; `tools/4` prepends it and converts with ImageMagick. The masthead, the three button icons (incl. the red STOP hand), Jesse's portrait, and the landscape backdrop all come from here.
-5. **Grammar / sounds map.** The `DATA` resource holds the master sound list. Speech words are listed alphabetically; the 12 non-speech sounds are appended at the end (these feed the Music and Nature buttons). `cranberries` and `lou` sit in the speech list, which is why they appear in Jesse's sentences. The exact event-to-sound wiring lives in the compiled `CODE` resources, which index the `DATA` list by position.
+5. **Grammar / sounds map.** The `DATA` resource holds the master sound list. Speech words are listed alphabetically; the 12 non-speech sounds are appended at the end (these feed the Music and Nature buttons). The exact event-to-sound wiring lives in the compiled `CODE` resources, which index the `DATA` list by position.
 
 ## Rebuild from scratch
 
@@ -70,7 +70,7 @@ The app's sound data and category mapping live inline in `index.html` in a `<scr
 
 **From the original resources (confirmed):** the name "SimJesse! — The Digital Demagogue", the "Run, Jesse, Run!" button, the 1993 Mark Hayes credit and Captain Crunch dedication, the three-button layout, all artwork, all 123 sounds, the master sound list and the speech-vs-music/nature grouping, and the *"No more!"* Stop sound.
 
-**Reconstructed (not byte-for-byte the original code):** the exact sentence-generation algorithm. The original logic is compiled machine code; the grammar here (templates + random fill, with `cranberries`/`lou` woven in) reproduces the "random but grammar-aware" feel rather than the precise original sequencing.
+**Reconstructed (not byte-for-byte the original code):** the exact sentence-generation algorithm. The original logic is compiled machine code; the grammar here reproduces the "random but grammar-aware" feel rather than the precise original sequencing.
 
 **Event sounds:** `intro` ("His name is Jesse Jackson") plays once at launch — in the browser it fires on the first interaction, since browsers block audio before a user gesture. `noNo` ("No more!") plays when you Stop the Jesse loop. Both are reserved from the random pool.
 
