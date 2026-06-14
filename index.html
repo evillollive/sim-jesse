@@ -341,6 +341,7 @@
     let t = seamless ? ctx.currentTime : ctx.currentTime+0.05;
     bufs.forEach((b)=>{
       const s=ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination);
+      s.onended=()=>{ s.disconnect(); const i=sources.indexOf(s); if(i>-1) sources.splice(i,1); };
       s.start(t); sources.push(s);
       T(()=>pulse(b.duration), (t-ctx.currentTime)*1000);
       t += b.duration + gap;
@@ -405,9 +406,9 @@
     };
   });
   document.addEventListener('click', closeMenus);
-  document.getElementById('mi-about').onclick=()=>{ closeMenus(); stop(false); main.style.display='none'; ap.style.display='block'; };
+  document.getElementById('mi-about').onclick=()=>{ closeMenus(); stop(false); main.style.display='none'; ap.style.display='block'; document.getElementById('back').focus(); };
   document.getElementById('mi-quit').onclick =()=>{ closeMenus(); stop(false); };
-  document.getElementById('back').onclick=()=>{ ap.style.display='none'; main.style.display='block'; };
+  document.getElementById('back').onclick=()=>{ ap.style.display='none'; main.style.display='block'; speakBtn.focus(); };
   document.querySelector('.closebox').onclick=()=>{ stop(false); };
   document.addEventListener('keydown',e=>{
     if(e.code==='Escape'){ closeMenus(); return; }

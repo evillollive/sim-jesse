@@ -10,9 +10,9 @@ Open `index.html` in any modern browser. No build step, no server, no dependenci
 
 ### Buttons (matching the original three)
 
-- **Run, Jesse, Run!** (left) runs continuously, generating sentences from the speech clips until you press Stop. On Stop, Jesse says *"No more!"*.
-- **Music** (middle) loops the instrument/musician samples (tomtom, cymbal, cowbell, bongo, drum solo).
-- **Nature** (right) loops the nature samples (splash, wind, bubbles, stream).
+- **Run, Jesse, Run!** (left) runs continuously, generating sentences from the speech clips until you press Stop. On Stop, Jesse says *"no more!"*.
+- **Music** (middle) loops instrument and musician samples.
+- **Nature** (right) loops nature sounds seamlessly.
 
 The classic Apple / File / Edit menu bar is reproduced from the app's original MENU resources; **About SimJesse!** is under the Apple menu.
 
@@ -64,7 +64,7 @@ python3 tools/3_decode_sounds.py res/snd wav
 tools/4_convert_pict.sh res/PICT png
 ```
 
-The app's sound data and category mapping live inline in `index.html` in a `<script id="appdata">` JSON block (sound name → base64 WAV, plus the grammar categories and templates). That's the place to edit behavior.
+The app's sound data and category mapping live inline in `index.html` in a `<script id="appdata">` JSON block (sound name to base64 WAV, plus category pools). The speech engine itself is hardcoded JavaScript that faithfully reproduces the original's 7 patterns.
 
 ## Fidelity notes (known vs. reconstructed)
 
@@ -72,7 +72,7 @@ The app's sound data and category mapping live inline in `index.html` in a `<scr
 
 **Faithfully reverse-engineered from the original binary:** the sentence-generation algorithm was traced through the compiled 68k Macintosh machine code. All 7 speech patterns and the shared coda were identified and ported to JavaScript, using the exact same sound pools and branching logic as the original.
 
-**Event sounds:** `intro` plays once at launch: in the browser it fires on the first interaction, since browsers block audio before a user gesture. `noNo` ("no more!") plays when you Stop the Jesse loop. Both are reserved from the random pool.
+**Event sounds:** `lou` ("Here comes Jesse Jackson") plays as the startup sound in the original app; in the browser it's available in Music mode. `intro` plays once on first interaction, since browsers block audio before a user gesture. `noNo` ("no more!") plays when you Stop the Jesse loop. All three are reserved from the speech pool.
 
 **Reserved / unused clips:** `pip` exists in the app but is left out of the random pools (it was kept out of the master speech list in the original too). `aw` plays in Music mode, matching the original binary where it appears in the music function. If `pip`'s original trigger is ever identified, it can be wired in.
 
