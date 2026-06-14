@@ -1,6 +1,8 @@
 # SimJesse! web re-creation
 
-A faithful, browser-based re-creation of **SimJesse! 1.0 "The Digital Demagogue"**, a Macintosh toy from 1993 (© Mark Hayes, ccmlh@it.bu.edu, freeware). The original was a compiled HyperCard-style application that played digitized Jesse Jackson speech clips, stringing them together in a random but grammar-aware order to generate endless pseudo-speeches.
+A faithful, browser-based re-creation of **SimJesse! 1.0 "The Digital Demagogue"**, a Macintosh toy from 1993 (© Mark Hayes, ccmlh@it.bu.edu, freeware). The original was a compiled classic Mac application that played digitized Jesse Jackson speech clips, stringing them together in a random but grammar-aware order to generate endless pseudo-speeches.
+
+The original app can no longer run on any modern hardware. It was rescued from digital preservation death by extracting every resource from the Mac resource fork, decoding the 1993-era MACE 3:1 audio, recovering the artwork, and reverse-engineering the speech algorithm directly from the compiled 68k machine code.
 
 This repo contains the working web version plus **everything extracted from the original app**, so the project can be picked up and worked on again at any time.
 
@@ -47,7 +49,8 @@ tools/
 2. **Resources.** `tools/2` parses the resource map and dumps every resource by type. (Gotcha: reference-list entries are 12 bytes each — a 2-byte id, 2-byte name offset, a packed 1+3-byte attributes/data offset, and a 4-byte reserved handle. Using 8 bytes instead of 12 silently corrupts everything.)
 3. **Sounds.** 120 of the 123 clips are **MACE 3:1** compressed (Apple's old `'snd '` compression, compressionID `3`; the compressed data is exactly `numFrames × 2` bytes). The other 3 are uncompressed 8-bit PCM at ~22 kHz. `tools/3` wraps the MACE data in a small AIFF-C (`MAC3`) container and decodes it with ffmpeg. Decoding to raw PCM and playing the still-compressed bytes is the bug to avoid — it produces fast, distorted noise.
 4. **Art.** PICT resources from a resource fork lack the 512-byte header QuickTime expects; `tools/4` prepends it and converts with ImageMagick. The masthead, the three button icons (incl. the red STOP hand), Jesse's portrait, and the landscape backdrop all come from here.
-5. **Grammar / sounds map.** The `DATA` resource holds the master sound list. Speech words are listed alphabetically; the 12 non-speech sounds are appended at the end (these feed the Music and Nature buttons). The exact event-to-sound wiring lives in the compiled `CODE` resources, which index the `DATA` list by position.
+5. **Grammar / sounds map.** The `DATA` resource holds the master sound list as length-prefixed Pascal strings: speech words listed alphabetically (indices 0-110), followed by 12 non-speech sounds (indices 111-122) that feed the Music and Nature buttons.
+6. **Speech engine.** The sentence-generation logic lives in the compiled 68k Motorola machine code inside `CODE/2.bin` (11 KB). To recover it, we traced every `GetNamedResource('snd ', name)` call to map the 123 sound handles to their A5-register offsets, then followed all references to those handles through the speech function (0x0BC6-0x1A40). The function picks one of 7 patterns via a random branch, plays a hardcoded sequence of clips with randomized sub-selections, then runs a shared "coda" (noise, optional iKnow/and/now/asJesusSaid). The startup function at 0x02BE revealed that `lou` ("Here comes Jesse Jackson") plays once at launch, before `intro`. All 7 patterns, their exact sound pools, and the coda were ported to JavaScript.
 
 ## Rebuild from scratch
 
