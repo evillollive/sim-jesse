@@ -382,12 +382,7 @@
   function rest(){ coneL.style.transform='scale(1)'; coneR.style.transform='scale(1)';
     face.style.transform='translate(-50%,-50%) scale(1)'; }
 
-  // launch sound: "His name is Jesse Jackson" — plays once on first interaction
-  // (browsers block audio until a user gesture, so we arm it on the first one)
-  let introPlayed=false;
-  function playIntro(){ if(introPlayed) return; introPlayed=true; playClip('intro'); }
-  window.addEventListener('pointerdown', playIntro, {once:true});
-  window.addEventListener('keydown', playIntro, {once:true});
+
 
   speakBtn.onclick =()=> mode==='jesse'  ? stop(true)  : start('jesse');
   musicBtn.onclick =()=> mode==='music'  ? stop(false) : start('music');
