@@ -713,11 +713,7 @@ document.getElementById('btn-comp-share').onclick=()=>{
   if(c){const clips=c.split(',').filter(x=>WORDS[x]!==undefined);if(clips.length){composition.push(...clips);showView('compose');renderTimeline();return;}}
 })();
 
-// Intro
-let introPlayed=false;
-function playIntro(){if(introPlayed)return;introPlayed=true;playClip('intro');}
-window.addEventListener('pointerdown',playIntro,{once:true});
-window.addEventListener('keydown',playIntro,{once:true});
+
 
 // Keys
 document.addEventListener('keydown',e=>{
