@@ -169,14 +169,20 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: baseline;
+  align-content: flex-end;
   gap: 0.3em;
   max-width: 650px;
-  min-height: 4rem;
+  width: 100%;
+  max-height: 50vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
   font-size: clamp(1.4rem, 4.5vw, 2.8rem);
   font-weight: 700;
   line-height: 1.4;
   text-align: center;
+  padding: 1rem 0;
+  mask-image: linear-gradient(transparent 0%, black 15%, black 100%);
+  -webkit-mask-image: linear-gradient(transparent 0%, black 15%, black 100%);
 }
 .word {
   display: inline-block;
@@ -675,30 +681,34 @@ const idleEl=document.getElementById('idle-msg');
 const portrait=document.getElementById('portrait');
 
 function clearCaptions(){captionsEl.innerHTML='';}
-function prepareWords(seq){
-  clearCaptions();
+function prepareWords(seq, targetEl){
+  const el = targetEl || captionsEl;
+  // Dim all existing current words before adding new ones
+  el.querySelectorAll('.word.current').forEach(w=>{w.classList.remove('current');w.classList.add('dim');});
   return seq.map(name=>{
     const text=WORDS[name];
     if(!text)return null;
     const span=document.createElement('span');
     span.className='word';
     span.textContent=text;
-    captionsEl.appendChild(span);
+    el.appendChild(span);
     return span;
   });
 }
-function showWord(el){
+function showWord(el, targetEl){
   if(!el)return;
-  captionsEl.querySelectorAll('.word.current').forEach(w=>{w.classList.remove('current');w.classList.add('dim');});
+  const container = targetEl || captionsEl;
+  container.querySelectorAll('.word.current').forEach(w=>{w.classList.remove('current');w.classList.add('dim');});
   el.classList.add('visible','current');
+  el.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 // ---- Playback ----
 let mode=null;
 
-async function playSeq(seq,seamless){
+async function playSeq(seq,seamless,targetEl){
   ac();if(ctx.state==='suspended')try{await ctx.resume();}catch(e){}
-  const els=prepareWords(seq);
+  const els=prepareWords(seq,targetEl);
   let bufs;try{bufs=await Promise.all(seq.map(getBuf));}catch(e){return;}
   const gap=seamless?0:0.04;
   let t=seamless?ctx.currentTime:ctx.currentTime+0.05;
@@ -706,7 +716,7 @@ async function playSeq(seq,seamless){
     const s=ctx.createBufferSource();s.buffer=b;s.connect(ctx.destination);
     s.onended=()=>{s.disconnect();const idx=sources.indexOf(s);if(idx>-1)sources.splice(idx,1);};
     s.start(t);sources.push(s);
-    T(()=>showWord(els[i]),(t-ctx.currentTime)*1000);
+    T(()=>showWord(els[i],targetEl),(t-ctx.currentTime)*1000);
     t+=b.duration+gap;
   });
   return new Promise(res=>T(res,(t-ctx.currentTime)*1000+(seamless?0:100)));
@@ -742,7 +752,7 @@ function updateClassicUI(){
 function stopAll(withNoNo){
   const was=mode;mode=null;hardStop();updateClassicUI();
   if(withNoNo&&was==='jesse'){clearCaptions();const span=document.createElement('span');span.className='word visible current';span.textContent=WORDS.noNo;captionsEl.appendChild(span);playClip('noNo');}
-  else clearCaptions();
+  else{clearCaptions();}
 }
 
 function startMode(name){if(mode){mode=null;hardStop();}mode=name;updateClassicUI();if(name==='jesse')idleEl.style.display='none';runLoop(name);}
