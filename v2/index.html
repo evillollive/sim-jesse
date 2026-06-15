@@ -377,6 +377,99 @@ body {
 .remix-stage h2 { color: var(--remix-main); font-size: 1.3rem; margin-bottom: 0.5rem; }
 .remix-stage p { color: var(--text-dim); font-size: 0.9rem; line-height: 1.5; max-width: 320px; }
 
+.remix-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.remix-viz {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+}
+.remix-portrait {
+  filter: sepia(1) saturate(2) hue-rotate(220deg) brightness(0.8) contrast(1.2);
+}
+.remix-captions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.3em;
+  max-width: 650px;
+  min-height: 4rem;
+  font-size: clamp(1.4rem, 4.5vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+.remix-captions .word.current { color: var(--remix-main); text-shadow: 0 0 24px var(--remix-glow); }
+
+.remix-controls {
+  padding: 1rem 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+.genre-row {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.genre {
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  color: var(--text-dim);
+  padding: 0.35rem 1rem;
+  border-radius: var(--pill);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.genre:hover { color: var(--text); border-color: var(--text-dim); }
+.genre.active { color: var(--remix-main); border-color: var(--remix-dim); background: rgba(167,139,250,0.08); }
+
+.big-btn.remix-play { background: var(--remix-main); color: #000; }
+.big-btn.remix-play:hover { background: #c4b5fd; }
+.big-btn.remix-stop { background: #ef4444; color: #fff; }
+.big-btn.remix-stop:hover { background: #f87171; }
+
+.tempo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.tempo-label { color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.tempo-slider {
+  width: 140px;
+  accent-color: var(--remix-main);
+}
+.tempo-val { color: var(--remix-main); font-size: 0.85rem; font-weight: 600; min-width: 2rem; }
+
+/* Beat indicator dots */
+.beat-dots {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.beat-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background 0.08s, transform 0.08s;
+}
+.beat-dot.hit {
+  background: var(--remix-main);
+  transform: scale(1.4);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
   .mode-card { padding: 1.15rem; }
@@ -480,10 +573,27 @@ body {
     <span class="mode-label">Remix</span>
   </div>
 
-  <div class="remix-stage">
-    <div class="icon">🎛️</div>
-    <h2>Coming Soon</h2>
-    <p>Jesse over beats. Pick a genre, let the speech engine ride the rhythm. Gospel, lo-fi, jazz, hip-hop.</p>
+  <div class="remix-layout">
+    <div class="remix-viz" id="remix-viz">
+      <img id="remix-portrait" class="portrait remix-portrait" src="../extracted/images_png/face_gray.png" alt="Jesse Jackson">
+      <div id="remix-captions" class="remix-captions"></div>
+      <p id="remix-idle" class="idle-msg">Pick a genre and press play.</p>
+    </div>
+
+    <div class="remix-controls">
+      <div class="genre-row">
+        <button class="genre active" data-genre="gospel" type="button">Gospel</button>
+        <button class="genre" data-genre="lofi" type="button">Lo-fi</button>
+        <button class="genre" data-genre="jazz" type="button">Jazz</button>
+        <button class="genre" data-genre="hiphop" type="button">Hip-hop</button>
+      </div>
+      <button id="btn-remix" class="big-btn remix-play" type="button">Play</button>
+      <div class="tempo-row">
+        <label class="tempo-label" for="tempo-slider">BPM</label>
+        <input type="range" id="tempo-slider" min="60" max="120" value="85" class="tempo-slider">
+        <span id="tempo-val" class="tempo-val">85</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -720,6 +830,198 @@ document.addEventListener('keydown',e=>{
   if(e.code==='Escape')showHome();
   if(e.code==='Space'&&views.classic.classList.contains('active')){e.preventDefault();btnPlay.click();}
 });
+
+// ---- Remix mode ----
+const GENRES = {
+  gospel: {
+    bpm: 78,
+    // [beat positions 0-7 in 8th notes per bar]: which clips to play
+    pattern: {
+      cowbell: [0, 4],
+      tomtom: [2, 6],
+      bongo: [0, 2, 4, 6],
+    }
+  },
+  lofi: {
+    bpm: 72,
+    pattern: {
+      bongo: [0, 4],
+      cymbal: [2, 6],
+      tomtom: [4],
+    }
+  },
+  jazz: {
+    bpm: 100,
+    pattern: {
+      cymbal: [0, 2, 3, 4, 6, 7],
+      bongo: [0, 4],
+      splash: [6],
+    }
+  },
+  hiphop: {
+    bpm: 88,
+    pattern: {
+      tomtom: [0, 4],
+      cowbell: [2, 6],
+      bongo: [0, 3, 4, 7],
+    }
+  }
+};
+
+let remixGenre = 'gospel';
+let remixBpm = 85;
+let remixRunning = false;
+let beatTimer = null;
+const btnRemix = document.getElementById('btn-remix');
+const remixPortrait = document.getElementById('remix-portrait');
+const remixCaptions = document.getElementById('remix-captions');
+const remixIdle = document.getElementById('remix-idle');
+const tempoSlider = document.getElementById('tempo-slider');
+const tempoVal = document.getElementById('tempo-val');
+
+// Genre selector
+document.querySelectorAll('.genre').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.genre').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    remixGenre = btn.dataset.genre;
+    const genreBpm = GENRES[remixGenre].bpm;
+    tempoSlider.value = genreBpm;
+    tempoVal.textContent = genreBpm;
+    remixBpm = genreBpm;
+  };
+});
+
+tempoSlider.oninput = () => {
+  remixBpm = parseInt(tempoSlider.value);
+  tempoVal.textContent = remixBpm;
+};
+
+// Beat scheduling
+async function preloadBeats() {
+  const clips = new Set();
+  for (const g of Object.values(GENRES)) {
+    for (const clip of Object.keys(g.pattern)) clips.add(clip);
+  }
+  await Promise.all([...clips].map(getBuf));
+}
+
+function scheduleBar(startTime, genre) {
+  const g = GENRES[genre];
+  const eighthNote = 60 / remixBpm / 2; // duration of one 8th note
+  for (const [clip, beats] of Object.entries(g.pattern)) {
+    const buf = buffers[clip];
+    if (!buf) continue;
+    for (const beat of beats) {
+      const t = startTime + beat * eighthNote;
+      const s = ctx.createBufferSource();
+      s.buffer = buf;
+      // Lower the volume of beat clips so Jesse can be heard
+      const gain = ctx.createGain();
+      gain.gain.value = 0.35;
+      s.connect(gain);
+      gain.connect(ctx.destination);
+      s.onended = () => { s.disconnect(); gain.disconnect(); };
+      s.start(t);
+      sources.push(s);
+    }
+  }
+  return 8 * eighthNote; // bar duration
+}
+
+// Jesse speech over beats
+let remixSpeechActive = false;
+
+async function remixSpeechLoop() {
+  remixSpeechActive = true;
+  while (remixRunning) {
+    const seq = buildSequence();
+    // Play Jesse over the beat (not seamless, with small gaps)
+    ac();
+    const els = [];
+    remixCaptions.innerHTML = '';
+    for (const name of seq) {
+      const text = WORDS[name];
+      if (!text) { els.push(null); continue; }
+      const span = document.createElement('span');
+      span.className = 'word';
+      span.textContent = text;
+      remixCaptions.appendChild(span);
+      els.push(span);
+    }
+
+    let bufs;
+    try { bufs = await Promise.all(seq.map(getBuf)); } catch(e) { break; }
+
+    const gap = 0.06;
+    let t = ctx.currentTime + 0.1;
+    bufs.forEach((b, i) => {
+      const s = ctx.createBufferSource();
+      s.buffer = b;
+      s.connect(ctx.destination);
+      s.onended = () => { s.disconnect(); const idx = sources.indexOf(s); if (idx > -1) sources.splice(idx, 1); };
+      s.start(t);
+      sources.push(s);
+      T(() => {
+        if (!remixRunning) return;
+        remixCaptions.querySelectorAll('.word.current').forEach(w => { w.classList.remove('current'); w.classList.add('dim'); });
+        if (els[i]) els[i].classList.add('visible', 'current');
+      }, (t - ctx.currentTime) * 1000);
+      t += b.duration + gap;
+    });
+
+    await new Promise(res => T(res, (t - ctx.currentTime) * 1000 + 200));
+    if (!remixRunning) break;
+  }
+  remixSpeechActive = false;
+}
+
+async function startRemix() {
+  ac();
+  if (ctx.state === 'suspended') try { await ctx.resume(); } catch(e) {}
+  await preloadBeats();
+  remixRunning = true;
+  remixPortrait.classList.add('visible');
+  remixIdle.style.display = 'none';
+  btnRemix.textContent = 'Stop';
+  btnRemix.className = 'big-btn remix-stop';
+
+  // Beat loop
+  let nextBarTime = ctx.currentTime + 0.05;
+  function loopBeat() {
+    if (!remixRunning) return;
+    // Schedule 2 bars ahead for smooth playback
+    while (nextBarTime < ctx.currentTime + 1.0) {
+      const barDur = scheduleBar(nextBarTime, remixGenre);
+      nextBarTime += barDur;
+    }
+    beatTimer = T(loopBeat, 200);
+  }
+  loopBeat();
+
+  // Start Jesse speech over the beat
+  remixSpeechLoop();
+}
+
+function stopRemix() {
+  remixRunning = false;
+  hardStop();
+  if (beatTimer) { clearTimeout(beatTimer); beatTimer = null; }
+  remixPortrait.classList.remove('visible');
+  remixCaptions.innerHTML = '';
+  remixIdle.style.display = '';
+  btnRemix.textContent = 'Play';
+  btnRemix.className = 'big-btn remix-play';
+}
+
+btnRemix.onclick = () => remixRunning ? stopRemix() : startRemix();
+
+// Stop remix when leaving the view
+const origShowHome = showHome;
+showHome = function() {
+  if (remixRunning) stopRemix();
+  origShowHome();
+};
 
 // Init
 buildPalette();
