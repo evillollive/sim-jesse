@@ -10,15 +10,14 @@ This repo contains the working web version plus **everything extracted from the 
 
 ## Run it
 
-Open `index.html` in any modern browser. No build step, no server, no dependencies, every sound and image is embedded in the single HTML file. (It also works as a GitHub Pages site: enable Pages on the repo root and it serves `index.html` directly.)
+**Version 2.0 "The Dream Machine"** is at `v2/index.html`. Three modes:
+- **Run, Jesse, Run!** generates continuous speeches with scrolling animated captions and a vibe selector (Hopeful, Fired Up, Reflective, Celebration).
+- **Compose** lets you build custom speeches by tapping clips onto a timeline, then share via link.
+- **Remix** plays Jesse's speeches over synthesized beats (Gospel, Lo-fi, Jazz, Hip-hop) with a tempo slider.
 
-### Buttons (matching the original three)
+**The original** is at `index.html`, a faithful pixel-for-pixel re-creation of the 1993 Mac UI with System 7 chrome. Both link to each other.
 
-- **Run, Jesse, Run!** (left) runs continuously, generating sentences from the speech clips until you press Stop. On Stop, Jesse says *"no more!"*.
-- **Music** (middle) loops instrument and musician samples.
-- **Nature** (right) loops nature sounds seamlessly.
-
-The classic Apple / File / Edit menu bar is reproduced from the app's original MENU resources; **About SimJesse!** is under the Apple menu.
+No build step, no server, no dependencies. Works as a GitHub Pages site.
 
 ## What's in here
 

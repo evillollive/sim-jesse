@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SimJesse! 2.0 - The Dream Machine</title>
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="A modern reimagining of SimJesse! 1.0 (1993). Generate Jesse Jackson speeches, compose your own, or remix them over beats.">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -491,7 +493,7 @@ body {
   <h1 class="home-title">SimJesse! 2.0</h1>
   <p class="home-sub">The Dream Machine</p>
 
-  <div class="mode-cards">
+  <div class="mode-cards" role="navigation" aria-label="Choose a mode">
     <div class="mode-card card-classic" data-target="view-classic">
       <div class="card-icon">🎤</div>
       <h2>Run, Jesse, Run!</h2>
@@ -525,7 +527,7 @@ body {
 
   <div class="classic-stage">
     <img id="portrait" class="portrait" src="../extracted/images_png/face_gray.png" alt="Jesse Jackson">
-    <div id="captions"></div>
+    <div id="captions" aria-live="polite" aria-atomic="false"></div>
     <p id="idle-msg" class="idle-msg">Press play to let Jesse speak.</p>
   </div>
 
@@ -578,7 +580,7 @@ body {
   <div class="remix-layout">
     <div class="remix-viz" id="remix-viz">
       <img id="remix-portrait" class="portrait remix-portrait" src="../extracted/images_png/face_gray.png" alt="Jesse Jackson">
-      <div id="remix-captions" class="remix-captions"></div>
+      <div id="remix-captions" class="remix-captions" aria-live="polite" aria-atomic="false"></div>
       <p id="remix-idle" class="idle-msg">Pick a genre and press play.</p>
     </div>
 
@@ -739,6 +741,7 @@ function updateClassicUI(){
   const j=mode==='jesse',m=mode==='music',n=mode==='nature';
   btnPlay.textContent=j?'Stop':'Run, Jesse, Run!';
   btnPlay.className=j?'big-btn classic-stop':'big-btn classic-play';
+  btnPlay.setAttribute('aria-pressed',String(j));
   btnMusic.classList.toggle('active',m);
   btnNature.classList.toggle('active',n);
   portrait.classList.toggle('visible',j);
