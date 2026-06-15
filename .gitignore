@@ -5,3 +5,4 @@ png/
 *.aifc
 _tmp*
 .DS_Store
+v2-words.json

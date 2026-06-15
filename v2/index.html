@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SimJesse! 2.0 - The Dream Machine</title>
+<meta name="description" content="A modern reimagining of SimJesse! 1.0 (1993). Generate endless Jesse Jackson speeches, compose your own, or remix them over beats.">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a14;
+  --surface: #141420;
+  --surface2: #1e1e2e;
+  --amber: #f59e0b;
+  --amber-dim: #b45309;
+  --amber-glow: rgba(245, 158, 11, 0.15);
+  --red: #ef4444;
+  --text: #f5f5f5;
+  --text-dim: #6b7280;
+  --text-muted: #3b3b4f;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 9999px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+header {
+  padding: 1rem 1.5rem 0;
+  text-align: center;
+}
+header h1 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--amber);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+header .subtitle {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 0.15rem;
+}
+
+/* Mode tabs */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+}
+.tab {
+  background: var(--surface);
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab:hover { color: var(--text); background: var(--surface2); }
+.tab.active {
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
+  font-weight: 700;
+}
+
+/* Main stage */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+  position: relative;
+  min-height: 50vh;
+}
+
+/* Portrait */
+.portrait {
+  width: 140px;
+  height: auto;
+  image-rendering: pixelated;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  filter: sepia(1) saturate(2) hue-rotate(-10deg) brightness(0.9) contrast(1.1);
+  margin-bottom: 1.5rem;
+}
+.portrait.visible { opacity: 0.7; }
+
+/* Caption area */
+#captions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.3em;
+  max-width: 700px;
+  min-height: 4rem;
+  font-size: clamp(1.5rem, 5vw, 3rem);
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+#captions .word {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease, color 0.4s ease;
+  color: var(--text);
+}
+#captions .word.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+#captions .word.dim {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+#captions .word.current {
+  color: var(--amber);
+  opacity: 1;
+  text-shadow: 0 0 20px var(--amber-glow);
+}
+
+/* Idle message */
+.idle-msg {
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+/* Controls */
+.controls {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.play-btn {
+  background: var(--amber);
+  color: var(--bg);
+  border: none;
+  padding: 0.85rem 2.5rem;
+  border-radius: var(--radius-pill);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+.play-btn:hover { background: #fbbf24; transform: scale(1.03); }
+.play-btn:active { transform: scale(0.98); }
+.play-btn.stop { background: var(--red); }
+.play-btn.stop:hover { background: #f87171; }
+
+/* Vibe selector */
+.vibes {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.vibe {
+  background: var(--surface);
+  border: 1px solid var(--surface2);
+  color: var(--text-dim);
+  padding: 0.3rem 0.9rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.vibe:hover { color: var(--text); border-color: var(--text-dim); }
+.vibe.active { background: var(--surface2); color: var(--amber); border-color: var(--amber-dim); }
+
+/* Secondary buttons row */
+.secondary-btns {
+  display: flex;
+  gap: 0.5rem;
+}
+.sec-btn {
+  background: var(--surface);
+  border: 1px solid var(--surface2);
+  color: var(--text-dim);
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sec-btn:hover { color: var(--text); border-color: var(--text-dim); }
+.sec-btn.active { color: var(--amber); border-color: var(--amber-dim); }
+
+/* Compose mode */
+.compose-panel { display: none; width: 100%; max-width: 800px; margin: 0 auto; }
+.compose-panel.active { display: block; }
+
+.tile-category {
+  margin-bottom: 0.75rem;
+}
+.tile-category h3 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 0.3rem;
+  padding-left: 0.25rem;
+}
+.tile-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.tile {
+  background: var(--surface2);
+  border: 1px solid transparent;
+  color: var(--text);
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.tile:hover { background: var(--amber-dim); border-color: var(--amber); color: var(--bg); }
+.tile:active { transform: scale(0.95); }
+
+.compose-timeline {
+  background: var(--surface);
+  border: 1px dashed var(--text-muted);
+  border-radius: var(--radius);
+  min-height: 60px;
+  padding: 0.5rem;
+  margin: 1rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+.compose-timeline:empty::after {
+  content: 'Tap clips above to build a speech...';
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+.compose-timeline .tile {
+  background: var(--amber-dim);
+  color: var(--bg);
+  cursor: pointer;
+}
+.compose-timeline .tile:hover {
+  background: var(--red);
+  color: white;
+}
+.compose-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+footer a { color: var(--text-dim); text-decoration: none; }
+footer a:hover { color: var(--amber); }
+
+/* Remix placeholder */
+.remix-placeholder {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 2rem;
+}
+.remix-placeholder .emoji { font-size: 3rem; margin-bottom: 1rem; }
+
+/* Mode panels */
+.mode-panel { display: none; }
+.mode-panel.active { display: flex; flex-direction: column; align-items: center; }
+
+/* Responsive */
+@media (max-width: 480px) {
+  .tabs { gap: 0.15rem; }
+  .tab { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+  .stage { padding: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SimJesse! 2.0</h1>
+  <p class="subtitle">The Dream Machine</p>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab active" data-mode="classic" role="tab" aria-selected="true">Run, Jesse, Run!</button>
+  <button class="tab" data-mode="compose" role="tab" aria-selected="false">Compose</button>
+  <button class="tab" data-mode="remix" role="tab" aria-selected="false">Remix</button>
+</nav>
+
+<main class="stage">
+  <!-- Classic mode -->
+  <div id="panel-classic" class="mode-panel active">
+    <img id="portrait" class="portrait" src="../extracted/images_png/face_gray.png" alt="Jesse Jackson">
+    <div id="captions"></div>
+    <p id="idle-classic" class="idle-msg">Press play to let Jesse speak.</p>
+  </div>
+
+  <!-- Compose mode -->
+  <div id="panel-compose" class="mode-panel" style="width:100%">
+    <div class="compose-panel active" id="compose-area"></div>
+  </div>
+
+  <!-- Remix mode -->
+  <div id="panel-remix" class="mode-panel">
+    <div class="remix-placeholder">
+      <div class="emoji">🎛️</div>
+      <p>Remix mode coming soon.</p>
+      <p style="margin-top:0.5rem; font-size:0.8rem;">Jesse over beats. Gospel, lo-fi, jazz, hip-hop.</p>
+    </div>
+  </div>
+</main>
+
+<div class="controls">
+  <div id="controls-classic">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:0.75rem;">
+      <button id="btn-play" class="play-btn" type="button">Run, Jesse, Run!</button>
+      <div class="vibes">
+        <button class="vibe active" data-vibe="all" type="button">All</button>
+        <button class="vibe" data-vibe="hopeful" type="button">Hopeful</button>
+        <button class="vibe" data-vibe="firedup" type="button">Fired Up</button>
+        <button class="vibe" data-vibe="reflective" type="button">Reflective</button>
+        <button class="vibe" data-vibe="celebration" type="button">Celebration</button>
+      </div>
+      <div class="secondary-btns">
+        <button class="sec-btn" id="btn-music" type="button">Music</button>
+        <button class="sec-btn" id="btn-nature" type="button">Nature</button>
+      </div>
+    </div>
+  </div>
+  <div id="controls-compose" style="display:none">
+    <div class="compose-controls">
+      <button class="play-btn" id="btn-compose-play" type="button">Play</button>
+      <button class="sec-btn" id="btn-compose-clear" type="button">Clear</button>
+      <button class="sec-btn" id="btn-compose-share" type="button">Copy Link</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>Original SimJesse! &copy; 1993 Mark Hayes. Freeware.</span>
+  <span> &middot; </span>
+  <a href="../index.html">Switch to Original</a>
+</footer>
+
+<script>
+(function(){
+'use strict';
+
+// ---- WORDS dictionary ----
+const WORDS = {"theySayJesseJackson":"They say Jesse Jackson","whenYouSeeJesseJackson":"When you see Jesse Jackson","asForJesseJackson":"As for Jesse Jackson","youSeeMeOnTV":"you see me on TV, but you don't know the me that makes me, me","imOftenAskedJesse":"I'm often asked, Jesse...","jesseJackson1":"Jesse Jackson","jesseJackson2":"Jesse Jackson","myName":"my name","wonderWhyDoesJesseRun":"Wonder why does Jesse run?","whydYouTakeOnTheseTuffIssues":"Why'd you take on these tough issues?","jesseWhydYouTakeTheseBBInits":"Jesse, why'd you take these big, bold initiatives?","iUnderstand1":"I understand","iUnderstand2":"I understand","iUnderstand3":"I understand","iUnderstand4":"I understand","iReallyDoUnderstand1":"I really do understand","iReallyDoUnderstand2":"I really do understand","iKnow":"I know","imOneOfThem":"I'm one of them","iLiveAmongstThem":"I live amongst them","imAWitness":"I'm a witness","imAWorkinPersonsPerson":"I'm a workin' person's person","iWasntAlwaysOnTV":"I wasn't always on television","commonGround1":"common ground","commonGround2":"common ground","commonGround3":"common ground","commonGround4":"common ground","commonGround5":"common ground","commonGround6":"common ground","leadership":"leadership","strongLeadership":"strong leadership","courage":"courage","patience":"patience","compassion":"compassion","endurance":"endurance","principles":"principles","power":"power","support":"support","hopeIsEternal":"hope is eternal","nobleInstincts":"noble instincts","steelNerves":"steel nerves","theGreaterGood":"the greater good","theCreativeSynthesis":"the creative synthesis","theGood":"the good","aGoodMind":"a good mind","women":"women","workers":"workers","farmers":"farmers","jews":"Jews","gaysAndLesbians":"gays and lesbians","thePoorAndVulnerable":"the poor and the vulnerable","workinMenAndWomen":"workin' men and women","thoseWhoAreSick":"those who are sick, with fever and pain","becauseItsRight":"because it's right","youKnowItsRight":"you know it's right","itsDeeperThanThat":"it's deeper than that","weCanSeekAHigherReality":"we can seek a higher reality","weBecomeOne":"we become one","onTheHighRoad":"on the high road","aThingOfBeauty":"a thing of beauty, and power, and culture","letsThinkItOut":"let's think it out","prayersAreBeingAnswered":"prayers are being answered","thereWillBePeaceInTheValley":"there will be peace in the valley","noneWillBeAfraid":"none will be afraid","someoneMustDefendThem":"someone must defend them","reachOutToYou":"reach out to you, across our nation","youNeedToKnowThatWeKnow":"you need to know that we know","asJesusSaid":"as Jesus said","theBibleTeachesThat":"the Bible teaches that","asALegacy":"as a legacy","atEveryLevel":"at every level","soSpecial":"so special","dontDespair":"don't despair","itSoundsImpossible":"it sounds impossible","americasNotABlanket":"America is not a blanket","iTakeThisPrincipledPosition":"I take this principled position","iWantedToHearTheirCase":"I want to hear their case","iStayedWithThemAllNiteLong":"I stayed with them all night long","iWannaGoOutWhereBigShipsFloat":"I wanna go out where big ships float","weBelieveInThat":"we believe in that","whereTheGreatOnesAre":"where the great ones are","beAsWiseAs":"be as wise as","youreRight":"you're right","tonight":"tonight","celebration":"celebration","pleasure":"pleasure","satisfy":"satisfy","dream1":"dream","dream2":"dream","weMustHave":"we must have","i1":"I","i2":"I","and":"and","the":"the","but":"but","now":"now","only":"only","surely":"surely","aw":"Aw","noNo":"no more!","bongo":"[bongo]","hendrix":"Hendrix","stream":"[stream]","cranberries":"Cranberries","cowbell":"[cowbell]","drumsolo":"[drum solo]","miles":"Miles","bubbles":"[bubbles]","lou":"Here comes Jesse Jackson","party":"party","tomtom":"[tom-tom]","wind":"[wind]","cymbal":"[cymbal]","splash":"[splash]","noise":"","pip":"[pip]","intro":"...","is":"is","of":"of","a":"a","will":"will","can":"can","you":"you"};
+
+// ---- Sound pools (from original 68k binary) ----
+const JESSE = ['jesseJackson1','jesseJackson2'];
+const VALUE9 = ['onTheHighRoad','aThingOfBeauty','aGoodMind','soSpecial','theGood','theGreaterGood','theCreativeSynthesis','strongLeadership','whereTheGreatOnesAre'];
+const UNDERSTAND4 = ['iUnderstand1','iUnderstand2','iUnderstand3','iUnderstand4'];
+const EMPATHY = ['iLiveAmongstThem','imOneOfThem','iStayedWithThemAllNiteLong','someoneMustDefendThem','iWantedToHearTheirCase','imAWitness'];
+const COMMON6 = ['commonGround1','commonGround2','commonGround3','commonGround4','commonGround5','commonGround6'];
+const SPIRIT_CLOSER = ['prayersAreBeingAnswered','hopeIsEternal','noneWillBeAfraid','thereWillBePeaceInTheValley','weBecomeOne'];
+const VALUE9B = ['cranberries','power','principles','steelNerves','patience','nobleInstincts','pleasure','compassion','strongLeadership'];
+const RIGHT3 = ['becauseItsRight','youKnowItsRight','youreRight'];
+const MUSIC_CLIPS = ['tomtom','cymbal','cowbell','bongo','drumsolo','hendrix','miles','splash','aw'];
+const NATURE_CLIPS = ['wind','bubbles','stream'];
+
+const SOUND_PATH = '../extracted/sounds_wav/';
+
+// ---- Compose mode categories ----
+const COMPOSE_CATS = {
+  'Intros': ['theySayJesseJackson','whenYouSeeJesseJackson','asForJesseJackson','youSeeMeOnTV','imOftenAskedJesse','jesseJackson1','jesseJackson2'],
+  'Questions': ['wonderWhyDoesJesseRun','whydYouTakeOnTheseTuffIssues','jesseWhydYouTakeTheseBBInits'],
+  'Understanding': ['iUnderstand1','iReallyDoUnderstand1','iKnow','imOneOfThem','iLiveAmongstThem','imAWitness','imAWorkinPersonsPerson','iWasntAlwaysOnTV'],
+  'Common Ground': ['commonGround1','commonGround2','commonGround3'],
+  'Values': ['leadership','strongLeadership','courage','patience','compassion','endurance','principles','power','support','hopeIsEternal','nobleInstincts','steelNerves','theGreaterGood','theCreativeSynthesis','theGood','aGoodMind'],
+  'Groups': ['women','workers','farmers','jews','gaysAndLesbians','thePoorAndVulnerable','workinMenAndWomen','thoseWhoAreSick'],
+  'Closers': ['becauseItsRight','youKnowItsRight','itsDeeperThanThat','weCanSeekAHigherReality','weBecomeOne','onTheHighRoad','aThingOfBeauty','letsThinkItOut','prayersAreBeingAnswered','thereWillBePeaceInTheValley','noneWillBeAfraid','someoneMustDefendThem','reachOutToYou','youNeedToKnowThatWeKnow','asJesusSaid','theBibleTeachesThat','asALegacy','dontDespair','itSoundsImpossible','americasNotABlanket','weBelieveInThat','whereTheGreatOnesAre','beAsWiseAs','youreRight','tonight','celebration','satisfy','dream1'],
+  'Connectors': ['and','the','but','now','only','surely','is','of','a','will','can','you','i1','myName','noNo','weMustHave','party','iTakeThisPrincipledPosition','iWannaGoOutWhereBigShipsFloat','iStayedWithThemAllNiteLong','iWantedToHearTheirCase']
+};
+
+// ---- Utilities ----
+const rand = a => a[Math.floor(Math.random() * a.length)];
+const maybe = p => Math.random() < p;
+
+// ---- Audio engine ----
+let ctx = null;
+const buffers = {};
+let sources = [];
+let timers = [];
+function ac() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); return ctx; }
+function T(fn, ms) { const id = setTimeout(fn, ms); timers.push(id); return id; }
+function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+async function getBuf(name) {
+  if (buffers[name]) return buffers[name];
+  const resp = await fetch(SOUND_PATH + name + '.wav');
+  const arr = await resp.arrayBuffer();
+  const buf = await ac().decodeAudioData(arr);
+  buffers[name] = buf;
+  return buf;
+}
+
+function hardStop() {
+  clearTimers();
+  sources.forEach(s => { try { s.stop(); } catch(e) {} });
+  sources = [];
+}
+
+// ---- Speech engine (7 patterns from original 68k binary) ----
+const VIBE_WEIGHTS = {
+  all:         [1, 1, 1, 1, 1, 1, 1],
+  hopeful:     [3, 0.5, 1, 0.5, 3, 3, 1],
+  firedup:     [1, 3, 0.5, 3, 0.5, 1, 0.5],
+  reflective:  [1, 1, 3, 0, 1, 0.5, 3],
+  celebration: [0.5, 1, 0.5, 5, 0.5, 1, 0.5]
+};
+
+let currentVibe = 'all';
+
+function weightedPatternPick() {
+  const w = VIBE_WEIGHTS[currentVibe] || VIBE_WEIGHTS.all;
+  const total = w.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < w.length; i++) {
+    r -= w[i];
+    if (r <= 0) return i;
+  }
+  return 0;
+}
+
+function buildSequence() {
+  const s = [];
+  const pat = weightedPatternPick();
+
+  if (pat === 0) {
+    s.push(rand(['theySayJesseJackson', ...JESSE]));
+    s.push('is');
+    if (maybe(0.3)) s.push('surely');
+    const v1 = rand(VALUE9); s.push(v1);
+    if (maybe(0.5)) { s.push('and', rand(VALUE9.filter(x => x !== v1))); }
+    if (maybe(0.3)) s.push('atEveryLevel');
+    s.push(rand(UNDERSTAND4));
+    s.push(rand(EMPATHY));
+    if (maybe(0.4)) { s.push(rand(['i1','i2']), 'reachOutToYou'); }
+    if (maybe(0.3)) s.push('tonight');
+    if (maybe(0.4)) s.push(rand(['iReallyDoUnderstand1','iReallyDoUnderstand2']));
+    if (maybe(0.3)) { s.push('and', 'iKnow'); }
+    s.push('support', rand(JESSE));
+    if (maybe(0.3)) { s.push('and', 'only', rand(JESSE)); }
+  } else if (pat === 1) {
+    s.push('but');
+    const sub = Math.floor(Math.random() * 19);
+    if (sub===0) s.push('imAWorkinPersonsPerson');
+    else if (sub===1) { s.push('americasNotABlanket'); if (maybe(0.4)) s.push('noNo','americasNotABlanket'); }
+    else if (sub===2) s.push('iWannaGoOutWhereBigShipsFloat','bubbles');
+    else if (sub===3) { s.push('iWasntAlwaysOnTV'); if (maybe(0.4)) s.push('noNo','iWasntAlwaysOnTV'); }
+    else if (sub===4) s.push('weCanSeekAHigherReality');
+    else if (sub===5) s.push('thereWillBePeaceInTheValley');
+    else if (sub===6) s.push('imOftenAskedJesse', rand(['jesseWhydYouTakeTheseBBInits','whydYouTakeOnTheseTuffIssues']));
+    else if (sub===7) { s.push('youSeeMeOnTV'); if (maybe(0.4)) s.push('noNo','youSeeMeOnTV'); }
+    else if (sub===8) s.push('iTakeThisPrincipledPosition');
+    else if (sub===9) { s.push(rand(['dream1','dream2'])); if (maybe(0.5)) s.push('of', rand(JESSE)); s.push('letsThinkItOut'); }
+    else if (sub===10) s.push('itsDeeperThanThat');
+    else if (sub===11) { s.push('weMustHave','a',rand(JESSE),'celebration','tonight'); if (maybe(0.4)) s.push('tonight'); }
+    else if (sub===12) s.push('asALegacy');
+    else if (sub===13) { s.push('dontDespair'); if (maybe(0.4)) s.push('noNo','dontDespair'); }
+    else if (sub===14) s.push('weBelieveInThat');
+    else if (sub===15) s.push('wonderWhyDoesJesseRun');
+    else if (sub===16) s.push('itSoundsImpossible');
+    else if (sub===17) s.push('youNeedToKnowThatWeKnow');
+    else s.push(rand(RIGHT3));
+  } else if (pat === 2) {
+    s.push('weMustHave');
+    const c1 = rand(COMMON6); s.push(c1);
+    if (maybe(0.5)) s.push(rand(COMMON6.filter(x => x !== c1)));
+  } else if (pat === 3) {
+    const reps = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < reps; i++) {
+      s.push('party', 'tonight');
+      if (maybe(0.5)) s.push(rand(RIGHT3));
+      s.push('noise');
+    }
+  } else if (pat === 4) {
+    s.push('whenYouSeeJesseJackson');
+    if (maybe(0.8)) s.push(rand(SPIRIT_CLOSER));
+    else s.push('beAsWiseAs', rand(JESSE));
+  } else if (pat === 5) {
+    if (maybe(0.5)) s.push('asForJesseJackson');
+    s.push('the');
+    const v1 = rand(VALUE9B); s.push(v1);
+    if (maybe(0.5)) { s.push('and', rand(VALUE9B.filter(x => x !== v1))); }
+    s.push('of', rand(JESSE));
+    s.push(rand(['will','can']));
+    if (maybe(0.3)) s.push('surely');
+    s.push(rand(['satisfy','support']));
+    if (maybe(0.4)) s.push('you');
+  } else {
+    const reps = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < reps; i++) s.push('myName', 'is', rand(JESSE));
+  }
+
+  // Coda
+  s.push('noise');
+  if (maybe(0.35)) s.push('iKnow');
+  if (maybe(0.25)) s.push('and');
+  if (maybe(0.2)) s.push('now');
+  if (maybe(0.2)) s.push(rand(['asJesusSaid','theBibleTeachesThat']));
+
+  return s;
+}
+
+// ---- Caption rendering ----
+const captionsEl = document.getElementById('captions');
+const idleEl = document.getElementById('idle-classic');
+const portrait = document.getElementById('portrait');
+
+function clearCaptions() {
+  captionsEl.innerHTML = '';
+}
+
+function prepareWordEls(seq) {
+  clearCaptions();
+  const els = [];
+  for (const name of seq) {
+    const text = WORDS[name];
+    if (!text) { els.push(null); continue; } // skip noise etc.
+    const span = document.createElement('span');
+    span.className = 'word';
+    span.textContent = text;
+    captionsEl.appendChild(span);
+    els.push(span);
+  }
+  return els;
+}
+
+function showWord(el) {
+  if (!el) return;
+  // dim all previous current words
+  captionsEl.querySelectorAll('.word.current').forEach(w => {
+    w.classList.remove('current');
+    w.classList.add('dim');
+  });
+  el.classList.add('visible', 'current');
+}
+
+function showStopCaption() {
+  clearCaptions();
+  const span = document.createElement('span');
+  span.className = 'word visible current';
+  span.textContent = WORDS.noNo;
+  captionsEl.appendChild(span);
+}
+
+// ---- Playback engine ----
+let mode = null; // null | 'jesse' | 'music' | 'nature' | 'compose'
+
+async function playSequence(seq, seamless) {
+  ac();
+  if (ctx.state === 'suspended') { try { await ctx.resume(); } catch(e) {} }
+
+  const wordEls = prepareWordEls(seq);
+  let bufs;
+  try { bufs = await Promise.all(seq.map(getBuf)); } catch(e) { return; }
+
+  const gap = seamless ? 0 : 0.04;
+  let t = seamless ? ctx.currentTime : ctx.currentTime + 0.05;
+
+  bufs.forEach((b, i) => {
+    const s = ctx.createBufferSource();
+    s.buffer = b;
+    s.connect(ctx.destination);
+    s.onended = () => { s.disconnect(); const idx = sources.indexOf(s); if (idx > -1) sources.splice(idx, 1); };
+    s.start(t);
+    sources.push(s);
+
+    // schedule word highlight
+    const delay = (t - ctx.currentTime) * 1000;
+    T(() => showWord(wordEls[i]), delay);
+
+    t += b.duration + gap;
+  });
+
+  return new Promise(res => T(res, (t - ctx.currentTime) * 1000 + (seamless ? 0 : 100)));
+}
+
+async function playClip(name) {
+  ac();
+  if (ctx.state === 'suspended') { try { await ctx.resume(); } catch(e) {} }
+  try {
+    const b = await getBuf(name);
+    const s = ctx.createBufferSource();
+    s.buffer = b;
+    s.connect(ctx.destination);
+    s.onended = () => s.disconnect();
+    s.start();
+  } catch(e) {}
+}
+
+async function runLoop(loopName) {
+  while (mode === loopName) {
+    let seq;
+    if (loopName === 'jesse') seq = buildSequence();
+    else if (loopName === 'music') seq = [rand(MUSIC_CLIPS)];
+    else seq = [rand(NATURE_CLIPS)];
+
+    await playSequence(seq, loopName === 'nature');
+    if (mode !== loopName) break;
+    await new Promise(res => T(res, loopName === 'jesse' ? 450 : loopName === 'nature' ? 0 : 160));
+  }
+}
+
+// ---- UI state ----
+const btnPlay = document.getElementById('btn-play');
+const btnMusic = document.getElementById('btn-music');
+const btnNature = document.getElementById('btn-nature');
+
+function updateUI() {
+  const isJesse = mode === 'jesse';
+  const isMusic = mode === 'music';
+  const isNature = mode === 'nature';
+
+  btnPlay.textContent = isJesse ? 'Stop' : 'Run, Jesse, Run!';
+  btnPlay.classList.toggle('stop', isJesse);
+  btnMusic.classList.toggle('active', isMusic);
+  btnNature.classList.toggle('active', isNature);
+  portrait.classList.toggle('visible', isJesse);
+  idleEl.style.display = (mode && currentTab === 'classic') ? 'none' : (currentTab === 'classic' ? '' : 'none');
+}
+
+function stopAll(withNoNo) {
+  const was = mode;
+  mode = null;
+  hardStop();
+  updateUI();
+  if (withNoNo && was === 'jesse') {
+    showStopCaption();
+    playClip('noNo');
+  } else {
+    clearCaptions();
+  }
+}
+
+function startMode(name) {
+  if (mode) { mode = null; hardStop(); }
+  mode = name;
+  updateUI();
+  if (name === 'jesse') idleEl.style.display = 'none';
+  runLoop(name);
+}
+
+btnPlay.onclick = () => mode === 'jesse' ? stopAll(true) : startMode('jesse');
+btnMusic.onclick = () => mode === 'music' ? stopAll(false) : startMode('music');
+btnNature.onclick = () => mode === 'nature' ? stopAll(false) : startMode('nature');
+
+// Vibe selector
+document.querySelectorAll('.vibe').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.vibe').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentVibe = btn.dataset.vibe;
+  };
+});
+
+// ---- Tab switching ----
+let currentTab = 'classic';
+const tabs = document.querySelectorAll('.tab');
+const panels = {
+  classic: document.getElementById('panel-classic'),
+  compose: document.getElementById('panel-compose'),
+  remix: document.getElementById('panel-remix')
+};
+const controlSections = {
+  classic: document.getElementById('controls-classic'),
+  compose: document.getElementById('controls-compose')
+};
+
+tabs.forEach(tab => {
+  tab.onclick = () => {
+    if (mode) stopAll(false);
+    currentTab = tab.dataset.mode;
+    tabs.forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+    tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
+    Object.values(panels).forEach(p => p.classList.remove('active'));
+    panels[currentTab].classList.add('active');
+    // controls
+    Object.values(controlSections).forEach(c => { if (c) c.style.display = 'none'; });
+    if (controlSections[currentTab]) controlSections[currentTab].style.display = '';
+    updateUI();
+  };
+});
+
+// ---- Compose mode ----
+const composeArea = document.getElementById('compose-area');
+const composition = [];
+
+function buildComposeUI() {
+  composeArea.innerHTML = '';
+
+  // Tile categories
+  for (const [catName, clips] of Object.entries(COMPOSE_CATS)) {
+    const cat = document.createElement('div');
+    cat.className = 'tile-category';
+    const h3 = document.createElement('h3');
+    h3.textContent = catName;
+    cat.appendChild(h3);
+    const row = document.createElement('div');
+    row.className = 'tile-row';
+    for (const clip of clips) {
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = 'tile';
+      tile.textContent = WORDS[clip] || clip;
+      tile.onclick = () => addToComposition(clip);
+      row.appendChild(tile);
+    }
+    cat.appendChild(row);
+    composeArea.appendChild(cat);
+  }
+
+  // Timeline
+  const tl = document.createElement('div');
+  tl.className = 'compose-timeline';
+  tl.id = 'timeline';
+  composeArea.appendChild(tl);
+}
+
+function renderTimeline() {
+  const tl = document.getElementById('timeline');
+  if (!tl) return;
+  tl.innerHTML = '';
+  composition.forEach((clip, i) => {
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'tile';
+    tile.textContent = WORDS[clip] || clip;
+    tile.title = 'Click to remove';
+    tile.onclick = () => { composition.splice(i, 1); renderTimeline(); };
+    tl.appendChild(tile);
+  });
+}
+
+function addToComposition(clip) {
+  composition.push(clip);
+  renderTimeline();
+}
+
+document.getElementById('btn-compose-clear').onclick = () => {
+  composition.length = 0;
+  renderTimeline();
+};
+
+document.getElementById('btn-compose-play').onclick = async () => {
+  if (composition.length === 0) return;
+  if (mode) stopAll(false);
+  mode = 'compose';
+  await playSequence([...composition], false);
+  mode = null;
+  clearCaptions();
+};
+
+document.getElementById('btn-compose-share').onclick = () => {
+  if (composition.length === 0) return;
+  const url = new URL(window.location.href);
+  url.searchParams.set('c', composition.join(','));
+  navigator.clipboard.writeText(url.toString()).then(() => {
+    const btn = document.getElementById('btn-compose-share');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy Link'; }, 1500);
+  }).catch(() => {
+    prompt('Copy this link:', url.toString());
+  });
+};
+
+// Load composition from URL
+function loadFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const c = params.get('c');
+  if (c) {
+    const clips = c.split(',').filter(x => WORDS[x] !== undefined);
+    if (clips.length > 0) {
+      composition.push(...clips);
+      // Switch to compose tab
+      document.querySelector('[data-mode="compose"]').click();
+      renderTimeline();
+    }
+  }
+}
+
+// Intro sound on first interaction
+let introPlayed = false;
+function playIntro() {
+  if (introPlayed) return;
+  introPlayed = true;
+  playClip('intro');
+}
+window.addEventListener('pointerdown', playIntro, { once: true });
+window.addEventListener('keydown', playIntro, { once: true });
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && currentTab === 'classic') {
+    e.preventDefault();
+    btnPlay.click();
+  }
+});
+
+// Init
+buildComposeUI();
+loadFromURL();
+
+})();
+</script>
+
+</body>
+</html>
