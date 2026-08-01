@@ -1,91 +1,112 @@
 # SimJesse! web re-creation
 
-A faithful, browser-based re-creation of **SimJesse! 1.0 "The Digital Demagogue"**, a Mac app from 1993 (© Mark Hayes, ccmlh@it.bu.edu, freeware). The original was a compiled classic Mac application that played digitized Jesse Jackson speech clips, stringing them together in a random but grammar-aware order to generate endless pseudo-speeches.
+[![quality](https://github.com/evillollive/sim-jesse/actions/workflows/quality.yml/badge.svg)](https://github.com/evillollive/sim-jesse/actions/workflows/quality.yml)
+[![GitHub Pages](https://img.shields.io/badge/demo-GitHub%20Pages-2ea44f)](https://evillollive.github.io/sim-jesse/)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![No build step](https://img.shields.io/badge/build-none-lightgrey)](#run-it)
 
-The original app can no longer run on any modern hardware. I've been a fan of SimJesse since it first came out in 1993, and only recently found a copy on an old Zip disk. That's how we were able to revive and modernize it: extracting every resource from the Mac resource fork, decoding the 1993-era MACE 3:1 audio, recovering the artwork, and reverse-engineering the speech algorithm directly from the compiled 68k machine code.
+**SimJesse!** revives a 1993 classic Mac freeware app as a browser experience: a grammar-aware random speech generator assembled from digitized Jesse Jackson clips, original Mac resources, and a reverse-engineered 68k speech algorithm.
 
-This project is a tribute to the enduring power of Jesse Jackson's oratory. Even scrambled into random fragments, the conviction and rhythm of his voice come through.
+<p align="center">
+  <a href="https://evillollive.github.io/sim-jesse/">
+    <img src="docs/assets/demo-preview.svg" alt="Preview of the SimJesse classic web recreation and Dream Machine modes" width="760">
+  </a>
+</p>
+
+The original **SimJesse! 1.0 "The Digital Demagogue"** can no longer run on modern hardware. This project preserves the experience by extracting the Mac resource fork, decoding MACE 3:1 audio, recovering the artwork, and porting the original sentence-generation logic into dependency-free web pages.
+
+## Why it is interesting
+
+- **Digital preservation:** keeps a small 1990s Mac culture artifact usable without emulators.
+- **Reverse engineering:** documents resource-fork extraction, PICT conversion, MACE audio decoding, and 68k control-flow tracing.
+- **Sound collage:** turns 123 recovered clips into continuous pseudo-speeches, a compose mode, and a remix mode.
+- **Easy to share:** the classic recreation is a single self-contained HTML file; the modern version runs from static hosting.
 
 ## Run it
 
-Open `index.html` in any modern browser. No build step, no server, no dependencies. Every sound and image is embedded in the single HTML file. It also works as a GitHub Pages site: enable Pages on the repo root and it serves `index.html` directly.
+| Goal | Command or link |
+| --- | --- |
+| Try the classic web recreation | Open <https://evillollive.github.io/sim-jesse/> |
+| Try Version 2.0, "The Dream Machine" | Open <https://evillollive.github.io/sim-jesse/v2/> |
+| Run the classic file locally | Open `index.html` in a modern browser |
+| Run all static files locally | `python3 -m http.server 8000`, then open <http://localhost:8000/> |
 
-The classic Apple / File / Edit menu bar is reproduced from the app's original MENU resources. **About SimJesse!** is under the Apple menu. The three buttons match the original:
+The classic `index.html` embeds its art and sounds directly, so it works without a build step, package manager, or server. Version 2.0 loads WAV files from `extracted/sounds_wav/`; use GitHub Pages or a local static server if your browser blocks local `file://` audio fetches.
 
-- **Run, Jesse, Run!** generates continuous speeches until you press Stop. On Stop, Jesse says "no more!"
-- **Music** loops instrument and musician samples.
-- **Nature** loops nature sounds seamlessly.
+## Feature highlights
 
-## What's in here
+### Classic SimJesse! 1.0 recreation
 
-```
-index.html                     The original re-creation (self-contained, audio + art embedded)
-v2/index.html                  Version 2.0 "The Dream Machine" (see below)
-original/
-  SimJesse 1.0.zip             The original Mac app, with resource fork preserved
-  SimJesse.rsrc                The raw resource fork, extracted (1.3 MB)
-extracted/
-  sounds_snd_raw/              All 123 original 'snd ' resources (raw, named by id+name)
-  sounds_wav/                  All 123 sounds decoded to WAV
-  images_pict_raw/             All 31 original PICT resources (raw)
-  images_png/                  Those PICTs converted to PNG
-  other_resources/             Everything else: CODE, DATA, DITL, DLOG, WIND, MENU, etc.
-tools/
-  1_extract_resource_fork.py   AppleDouble  -> SimJesse.rsrc
-  2_dump_resources.py          SimJesse.rsrc -> extracted resource tree
-  3_decode_sounds.py           'snd ' resources -> WAV (handles MACE 3:1 + raw PCM)
-  4_convert_pict.sh            PICT resources  -> PNG (ImageMagick)
-```
+- Original Apple / File / Edit menu structure, including **About SimJesse!** under the Apple menu.
+- Three original-style controls:
+  - **Run, Jesse, Run!** generates continuous speeches until stopped.
+  - **Music** loops instrument and musician samples.
+  - **Nature** loops nature sounds seamlessly.
+- Preserved event sounds: startup is represented by `lou` ("Here comes Jesse Jackson"), and Stop plays `noNo` ("no more!").
 
-## How it was reverse-engineered
+### Version 2.0: "The Dream Machine"
 
-1. **Resource fork.** Classic Mac files keep their content in a resource fork. Zipping the app on a Mac preserves the fork as an AppleDouble file. `tools/1` reads that and writes `SimJesse.rsrc`.
-2. **Resources.** `tools/2` parses the resource map and dumps every resource by type. (Gotcha: reference-list entries are 12 bytes each, not 8. Missing the 4-byte reserved handle silently corrupts everything.)
-3. **Sounds.** 120 of the 123 clips are **MACE 3:1** compressed (Apple's old `'snd '` codec, compressionID `3`). The other 3 are uncompressed 8-bit PCM at ~22 kHz. `tools/3` wraps the MACE data in an AIFF-C (`MAC3`) container and decodes with ffmpeg.
-4. **Art.** PICT resources from a resource fork lack the 512-byte header QuickTime expects. `tools/4` prepends it and converts with ImageMagick. The portrait, backdrop, button icons, and masthead all come from here.
-5. **Sound list.** The `DATA` resource holds the master sound list as length-prefixed Pascal strings: speech words listed alphabetically (indices 0-110), followed by 12 non-speech sounds (indices 111-122) that feed the Music and Nature buttons.
-6. **Speech engine.** The sentence-generation logic lives in the compiled 68k Motorola machine code inside `CODE/2.bin` (11 KB). To recover it, we traced every `GetNamedResource('snd ', name)` call to map the 123 sound handles to their A5-register offsets, then followed all references through the speech function (0x0BC6-0x1A40). The function picks one of 7 patterns via a random branch, plays a hardcoded sequence of clips with randomized sub-selections, then runs a shared coda. The startup function at 0x02BE revealed that `lou` ("Here comes Jesse Jackson") plays once at launch. All 7 patterns, their exact sound pools, and the coda were ported to JavaScript.
+`v2/index.html` is a modern reimagining built from the same 123 clips and seven recovered speech patterns:
 
-## Rebuild from scratch
+- **Run, Jesse, Run!** adds scrolling animated captions and vibe filters: Hopeful, Fired Up, Reflective, and Celebration.
+- **Compose** lets you tap clips onto a timeline, play them back, and copy a shareable URL.
+- **Remix** layers Jesse speech over synthesized beats in Gospel, Lo-fi, Jazz, and Hip-hop modes with a BPM control.
+
+## How it works
+
+1. **Resource fork recovery:** the preserved Mac app archive includes an AppleDouble resource fork, extracted into `SimJesse.rsrc`.
+2. **Resource dumping:** custom Python tooling parses the classic Mac resource map into sounds, PICT images, menus, dialogs, code, and data.
+3. **Audio decoding:** 120 of 123 clips are Apple MACE 3:1 compressed `'snd '` resources; the tools wrap them as AIFF-C `MAC3` so `ffmpeg` can decode WAV files.
+4. **Artwork conversion:** PICT resources get a QuickTime-compatible 512-byte header before conversion to PNG.
+5. **Speech algorithm port:** the original 68k `CODE/2.bin` was traced to recover seven random speech patterns, sound pools, branching behavior, and the shared coda.
+
+Read the detailed preservation notes in [docs/REVERSE_ENGINEERING.md](docs/REVERSE_ENGINEERING.md).
+
+## Repository map
+
+| Path | Purpose |
+| --- | --- |
+| `index.html` | Faithful, self-contained SimJesse! 1.0 browser recreation |
+| `v2/index.html` | Version 2.0 "The Dream Machine" with classic, compose, and remix modes |
+| `original/` | Original Mac app archive and extracted raw resource fork |
+| `extracted/sounds_snd_raw/` | All 123 original `'snd '` resources, named by id and resource name |
+| `extracted/sounds_wav/` | Decoded WAV versions of the sound resources |
+| `extracted/images_pict_raw/` | Raw PICT resources |
+| `extracted/images_png/` | Converted PNG artwork, including portrait and UI assets |
+| `tools/` | Resource extraction, decoding, conversion, and static quality checks |
+| `docs/SHARING.md` | Positioning, demo ideas, topic suggestions, and share-ready copy |
+
+## Commands and caveats
 
 ```bash
-# 1. unzip the original (on a Mac, or anywhere the AppleDouble survives)
-unzip "original/SimJesse 1.0.zip" -d _work
+# Static security/accessibility baseline used by GitHub Actions
+python3 tools/quality_checks.py
 
-# 2. extract the resource fork and dump resources
+# Serve the repo locally for v2 audio fetches
+python3 -m http.server 8000
+```
+
+Rebuilding the extracted assets from scratch requires Python 3, `ffmpeg` for MACE audio decoding, and ImageMagick for PICT conversion:
+
+```bash
+unzip "original/SimJesse 1.0.zip" -d _work
 python3 tools/1_extract_resource_fork.py "_work/__MACOSX/._SimJesse 1.0" SimJesse.rsrc
 python3 tools/2_dump_resources.py SimJesse.rsrc res
-
-# 3. decode sounds (needs ffmpeg) and convert art (needs ImageMagick)
 python3 tools/3_decode_sounds.py res/snd wav
 tools/4_convert_pict.sh res/PICT png
 ```
 
-## Fidelity notes
+## Privacy, security, and trust
 
-**From the original resources (confirmed):** the name "SimJesse! The Digital Demagogue", the "Run, Jesse, Run!" button, the 1993 Mark Hayes credit and Captain Crunch dedication, the three-button layout, all artwork, all 123 sounds, the master sound list and the speech-vs-music/nature grouping, and the "no more!" stop sound.
+SimJesse is static web content: no backend, no package dependencies, no analytics, and no user accounts. The classic page embeds all media in `index.html` and includes Content Security Policy and referrer-policy meta tags checked by `tools/quality_checks.py`. Version 2.0 fetches local WAV files and uses the clipboard only when you press **Copy Link** in Compose mode.
 
-**Faithfully reverse-engineered from the original binary:** the sentence-generation algorithm was traced through the compiled 68k machine code. All 7 speech patterns and the shared coda were identified and ported to JavaScript, using the exact same sound pools and branching logic as the original.
+The original **SimJesse! 1.0** was © 1993 Mark Hayes (ccmlh@it.bu.edu), distributed as freeware with "Please distribute!" language and dedicated to Captain Crunch, the Multicultural Caffeinated Cockatiel. This re-creation is a preservation tribute to Jesse Jackson's oratory and the creativity of the original Mac freeware scene.
 
-**Event sounds:** `lou` ("Here comes Jesse Jackson") is the original startup sound, now available in Music mode. `noNo` ("no more!") plays when you stop the Jesse loop. Both are reserved from the speech pool.
+## Share it
 
----
+Useful search phrases: **SimJesse web recreation**, **1993 Mac app preservation**, **classic Mac resource fork reverse engineering**, **MACE 3:1 audio decoding**, **browser-based vintage Mac app recreation**, **Jesse Jackson speech generator**.
 
-## Version 2.0: "The Dream Machine"
-
-As an experiment and tribute to the fun and creativity of the classic app, we built a modern reimagining at `v2/index.html`. Same 123 original sound clips, same 7 speech patterns from the 1993 binary, but wrapped in a new experience with three modes:
-
-- **Run, Jesse, Run!** The classic speech generator with scrolling animated captions and a vibe selector that shifts the mood (Hopeful, Fired Up, Reflective, Celebration).
-- **Compose.** Build your own Jesse speech by tapping clips onto a timeline. Play it back, then share your creation via link.
-- **Remix.** Jesse's speeches play over synthesized beats. Four genres (Gospel, Lo-fi, Jazz, Hip-hop), each with kick, snare, hi-hat, bass, and the original percussion samples layered on top. A tempo slider lets you dial the BPM.
-
-Version 2.0 loads audio from the extracted WAV files rather than embedding base64. No build step, no dependencies, no server. Just open the HTML file.
-
----
-
-## Credits
-
-Original **SimJesse! 1.0** &copy; 1993 Mark Hayes (ccmlh@it.bu.edu) freeware, "Please distribute!" Dedicated to Captain Crunch, the Multicultural Caffeinated Cockatiel.
+If this kind of web preservation is your thing, try the live demo, star the repo, and share it with people interested in classic Mac software, audio archaeology, creative coding, or small weird web toys.
 
 ## License
 
